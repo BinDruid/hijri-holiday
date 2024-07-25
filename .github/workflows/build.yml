@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0 # See: https://goreleaser.com/ci/actions/
 
-      - name: Set up Go 1.14
+      - name: Set up Go 1.22.4
         uses: actions/setup-go@v2
         with:
           go-version: 1.22.4
@@ -31,6 +31,6 @@ jobs:
         with:
           distribution: goreleaser
           version: '~> v2'
-          args: release --clean
+          args: release --clean --snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

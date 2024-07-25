@@ -3,52 +3,70 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"github.com/BinDruid/hijri-holiday/structs"
 	"github.com/gocolly/colly/v2"
+	"log"
 	"os"
 	"strings"
+	"time"
 )
 
+const baseURL = "https://www.time.ir/fa/eventyear-%d8%aa%d9%82%d9%88%db%8c%d9%85-%d8%b3%d8%a7%d9%84%db%8c%d8%a7%d9%86%d9%87"
+const todayPath = "//div[contains(@class, 'today-shamsi')]//span[contains(@id, 'ShamsiNumeral')]"
+const holidayPath = "//li[contains(@class, 'eventHoliday')]//span[contains(@id, 'EventYearCalendar')]"
+
 func main() {
-	jsonPath := flag.String("o", "holiday.json", "Path to the output JSON file")
+	jsonPath := flag.String("o", "holidays.json", "Path to the output JSON file")
 	flag.Parse()
 	c := colly.NewCollector()
-	var dates []structs.Holiday
-	c.OnXML("//li[contains(@class, 'eventHoliday')]//span[contains(@id, 'EventYearCalendar')]", func(e *colly.XMLElement) {
+	var holidays []structs.Holiday
+	var year string
+
+	c.OnXML(todayPath, func(e *colly.XMLElement) {
+		today := strings.TrimSpace(e.Text)
+		parts := strings.Split(today, "/")
+		year = parts[0]
+	})
+
+	c.OnXML(holidayPath, func(e *colly.XMLElement) {
 		persianDate := strings.TrimSpace(e.Text)
 		parts := strings.Split(persianDate, " ")
 		if len(parts) != 2 {
-			fmt.Println("invalid Persian date format")
-			return
+			log.Fatal("invalid Persian date format")
 		}
 
 		holiday := structs.Holiday{Month: parts[1], Day: parts[0]}
-		err := holiday.ConvertMonth()
-		if err != nil {
-			fmt.Println("Error converting date:", err)
-			return
-		}
-		holiday.ConvertDay()
-		dates = append(dates, holiday)
+		holiday.Convert()
+		holidays = append(holidays, holiday)
 	})
 
 	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL.String())
+		log.Println("Fetching time.ir to extract holidays")
 	})
-	err := c.Visit("https://www.time.ir/fa/eventyear-%d8%aa%d9%82%d9%88%db%8c%d9%85-%d8%b3%d8%a7%d9%84%db%8c%d8%a7%d9%86%d9%87")
+
+	c.OnError(func(_ *colly.Response, err error) {
+		log.Fatal("error visiting the time.ir:", err)
+	})
+
+	c.OnScraped(func(r *colly.Response) {
+		log.Println("Finished crawling time.ir")
+	})
+
+	err := c.Visit(baseURL)
 	if err != nil {
-		fmt.Println("Error visiting the URL:", err)
+		log.Fatal("error visiting the time.ir: ", err)
 		return
 	}
-	err = saveToJSON(dates, jsonPath)
+	result := structs.ScrapResult{CrawlTime: time.Now(), Year: year, Holidays: holidays}
+	result.ConvertYear()
+	err = saveToJSON(result, jsonPath)
 	if err != nil {
-		fmt.Println("Error saving to JSON file:", err)
+		log.Fatal("Error saving to JSON file:", err)
 	}
-	fmt.Println("Saved holidays to JSON file", *jsonPath)
+	log.Println("Saved holidays to JSON file", *jsonPath)
 }
 
-func saveToJSON(dates []structs.Holiday, filename *string) error {
+func saveToJSON(result structs.ScrapResult, filename *string) error {
 	file, err := os.Create(*filename)
 	if err != nil {
 		return err
@@ -56,5 +74,5 @@ func saveToJSON(dates []structs.Holiday, filename *string) error {
 	defer file.Close()
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(dates)
+	return encoder.Encode(result)
 }

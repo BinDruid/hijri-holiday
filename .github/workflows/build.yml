@@ -7,6 +7,8 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: write
 
 
 jobs:

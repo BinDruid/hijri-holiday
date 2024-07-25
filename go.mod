@@ -1,4 +1,4 @@
-module github.com/BinDruid/hijri-holiday-cli
+module github.com/BinDruid/hijri-holiday
 
 go 1.22.4
 

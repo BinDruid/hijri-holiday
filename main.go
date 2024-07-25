@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/BinDruid/hijri-holiday-cli/structs"
+	"github.com/BinDruid/hijri-holiday/structs"
 	"github.com/gocolly/colly/v2"
 	"os"
 	"strings"

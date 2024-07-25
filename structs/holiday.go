@@ -1,16 +1,37 @@
 package structs
 
 import (
-	"fmt"
+	"log"
 	"strings"
+	"time"
 )
+
+func ConvertNumber(n string) string {
+	persianToEnglishDigits := map[string]string{
+		"۰": "0",
+		"۱": "1",
+		"۲": "2",
+		"۳": "3",
+		"۴": "4",
+		"۵": "5",
+		"۶": "6",
+		"۷": "7",
+		"۸": "8",
+		"۹": "9",
+	}
+	var converted strings.Builder
+	for _, char := range n {
+		converted.WriteString(persianToEnglishDigits[string(char)])
+	}
+	return converted.String()
+}
 
 type Holiday struct {
 	Month string `json:"month"`
 	Day   string `json:"day"`
 }
 
-func (h *Holiday) ConvertMonth() error {
+func (h *Holiday) convertMonth() {
 	persianMonths := map[string]string{
 		"فروردین":  "1",
 		"اردیبهشت": "2",
@@ -27,28 +48,22 @@ func (h *Holiday) ConvertMonth() error {
 	}
 	month, exists := persianMonths[h.Month]
 	if !exists {
-		return fmt.Errorf("invalid Persian month name")
+		log.Fatal("invalid Persian month name")
 	}
 	h.Month = month
-	return nil
 }
 
-func (h *Holiday) ConvertDay() {
-	persianToEnglishDigits := map[string]string{
-		"۰": "0",
-		"۱": "1",
-		"۲": "2",
-		"۳": "3",
-		"۴": "4",
-		"۵": "5",
-		"۶": "6",
-		"۷": "7",
-		"۸": "8",
-		"۹": "9",
-	}
-	var day strings.Builder
-	for _, char := range h.Day {
-		day.WriteString(persianToEnglishDigits[string(char)])
-	}
-	h.Day = day.String()
+func (h *Holiday) Convert() {
+	h.convertMonth()
+	h.Day = ConvertNumber(h.Day)
+}
+
+type ScrapResult struct {
+	CrawlTime time.Time `json:"crawl_time"`
+	Year      string    `json:"year"`
+	Holidays  []Holiday `json:"holidays"`
+}
+
+func (s *ScrapResult) ConvertYear() {
+	s.Year = ConvertNumber(s.Year)
 }

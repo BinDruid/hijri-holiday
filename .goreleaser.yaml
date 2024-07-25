@@ -1,0 +1,13 @@
+project_name: hijri-holiday-cli
+
+builds:
+  - binary: hijri-holiday
+  - env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+

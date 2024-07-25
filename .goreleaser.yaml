@@ -1,5 +1,4 @@
-project_name: hijri-holiday-cli
-
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 builds:
   - binary: hijri-holiday
   - env: [CGO_ENABLED=0]

@@ -5,7 +5,7 @@ import (
 	"flag"
 	"github.com/BinDruid/hijri-holiday/structs"
 	"github.com/gocolly/colly/v2"
-	"log"
+	"github.com/pterm/pterm"
 	"os"
 	"strings"
 	"time"
@@ -16,6 +16,7 @@ const todayPath = "//div[contains(@class, 'today-shamsi')]//span[contains(@id, '
 const holidayPath = "//li[contains(@class, 'eventHoliday')]//span[contains(@id, 'EventYearCalendar')]"
 
 func main() {
+	spinner, _ := pterm.DefaultSpinner.Start("Crawling time.ir")
 	jsonPath := flag.String("o", "holidays.json", "Path to the output JSON file")
 	flag.Parse()
 	c := colly.NewCollector()
@@ -32,7 +33,7 @@ func main() {
 		persianDate := strings.TrimSpace(e.Text)
 		parts := strings.Split(persianDate, " ")
 		if len(parts) != 2 {
-			log.Fatal("invalid Persian date format")
+			pterm.Fatal.WithFatal(true).Printf("invalid Persian date format")
 		}
 
 		holiday := structs.Holiday{Month: parts[1], Day: parts[0]}
@@ -40,30 +41,24 @@ func main() {
 		holidays = append(holidays, holiday)
 	})
 
-	c.OnRequest(func(r *colly.Request) {
-		log.Println("Fetching time.ir to extract holidays")
-	})
-
 	c.OnError(func(_ *colly.Response, err error) {
-		log.Fatal("error visiting the time.ir:", err)
+		pterm.Fatal.WithFatal(true).Printf("error visiting the time.ir: %s", err)
 	})
 
 	c.OnScraped(func(r *colly.Response) {
-		log.Println("Finished crawling time.ir")
+		spinner.Success()
 	})
-
 	err := c.Visit(baseURL)
 	if err != nil {
-		log.Fatal("error visiting the time.ir: ", err)
-		return
+		pterm.Fatal.WithFatal(true).Printf("error visiting the time.ir: %s", err)
 	}
 	result := structs.ScrapResult{CrawlTime: time.Now(), Year: year, Holidays: holidays}
 	result.ConvertYear()
 	err = saveToJSON(result, jsonPath)
 	if err != nil {
-		log.Fatal("Error saving to JSON file:", err)
+		pterm.Fatal.WithFatal(true).Printf("Error saving to JSON file: %s", err)
 	}
-	log.Println("Saved holidays to JSON file", *jsonPath)
+	pterm.Info.Println("Saved holidays to JSON file: ", *jsonPath)
 }
 
 func saveToJSON(result structs.ScrapResult, filename *string) error {
